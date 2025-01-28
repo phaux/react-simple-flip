@@ -15,11 +15,12 @@
   "author": "phaux",
   "sideEffects": false,
   "type": "module",
-  "main": "./lib/index.js",
-  "exports": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "./dist/index.js",
+  "exports": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
-    "lib"
+    "dist",
+    "src"
   ],
   "scripts": {
     "format": "prettier --write .",
@@ -32,16 +33,16 @@
     "semi": false
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.0-beta.9",
-    "@types/react": "^19.0.7",
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
     "prettier": "^3.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.0-beta.9",
+    "tailwindcss": "^4.0.0",
     "typescript": "^5.4.2",
-    "vite": "^6.0.2"
+    "vite": "^6.0.11"
   },
   "peerDependencies": {
     "react": "*"

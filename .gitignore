@@ -1,5 +1,2 @@
 node_modules/
-example/**/*.d.ts
-example/**/*.js
-lib/**/*.d.ts
-lib/**/*.js
+dist/

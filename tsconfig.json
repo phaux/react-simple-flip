@@ -10,9 +10,10 @@
     "moduleResolution": "NodeNext",
     "noUncheckedIndexedAccess": true,
     "noUncheckedSideEffectImports": true,
+    "outDir": "dist",
     "strict": true,
     "target": "ESNext",
     "verbatimModuleSyntax": true
   },
-  "include": ["lib/**/*.ts", "lib/**/*.tsx"]
+  "include": ["src"]
 }
