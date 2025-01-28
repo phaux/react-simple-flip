@@ -178,7 +178,6 @@ export function useFlipList<T>(
       const controller = new AbortController()
       Promise.resolve().then(() => {
         if (entry.ref.current) {
-          // console.log("entering", key)
           return onEnter(entry.ref.current, controller.signal, hiddenStyle, timing)
         }
       })
@@ -203,13 +202,11 @@ export function useFlipList<T>(
       Promise.resolve()
         .then(() => {
           if (entry.ref.current) {
-            // console.log("exiting", key)
             return onExit(entry.ref.current, controller.signal, hiddenStyle, timing)
           }
         })
         .finally(() => {
           if (!controller.signal.aborted) {
-            // console.log("exited", key)
             setEntries((entries) => entries.filter((entry) => getKey(entry.item) !== key))
             exits.current.delete(key)
             enters.current.delete(key)
