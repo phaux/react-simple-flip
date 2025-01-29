@@ -51,10 +51,7 @@ export interface FlipOptions {
  * Animates an element whenever its position in the document changes between rerenders.
  *
  * On every rerender, reads element's position and size and compare it to values from previous render or last window resize.
- * If values are different, animates element's transform from previous position to current.
- *
- * @param ref The element ref to animate.
- * @param options CSS Animation options.
+ * If values are different, calls the provided callback with the calculated transform.
  */
 export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions): void {
   const {
