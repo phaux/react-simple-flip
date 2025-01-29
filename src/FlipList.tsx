@@ -104,7 +104,7 @@ export interface FlipListOptions {
 
 /**
  * Takes a list of items and maintains a list of entries with their associated refs,
- * last computed element's positions, and including already removed items.
+ * last computed element's positions, and keeps already removed items.
  *
  * You can use resulting list to associate rendered elements with refs
  * and keep rendering removed elements until their animation finishes.
@@ -272,7 +272,11 @@ export interface FlipListEntry<T> {
  * Props for {@link FlipList}.
  */
 export interface FlipListProps extends FlipListOptions {
-  children: ReactElement<{ ref: Ref<HTMLElement> }>[]
+  children:
+    | ReactElement<{ ref: Ref<HTMLElement> }>[]
+    | ReactElement<{ ref: Ref<HTMLElement> }>
+    | null
+    | undefined
 }
 
 /**
@@ -288,7 +292,8 @@ export interface FlipListProps extends FlipListOptions {
  */
 export function FlipList(props: FlipListProps): JSX.Element[] {
   const { children, ...options } = props
-  const entries = useFlipList(children, getChildKey, options)
+  const childArray = Array.isArray(children) ? children : children == null ? [] : [children]
+  const entries = useFlipList(childArray, getChildKey, options)
   return entries.map((entry) => cloneElement(entry.item, { ref: entry.ref }))
 }
 

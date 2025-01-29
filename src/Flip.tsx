@@ -93,7 +93,7 @@ export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions
 /**
  * Props for {@link Flip}.
  */
-export type FlipProps<T extends ElementType = "div"> = ComponentProps<T> & { options: FlipOptions }
+export type FlipProps<T extends ElementType = "div"> = ComponentProps<T> & { options?: FlipOptions }
 
 /**
  * Element which animates whenever its position in the document changes between rerenders.
