@@ -2,7 +2,7 @@
 
 A library for FLIP animations in React.
 
-<video src="./example.mp4" autoplay loop></video>
+![Example GIF](./example.gif)
 
 ```jsx
 import { useState } from "react"
