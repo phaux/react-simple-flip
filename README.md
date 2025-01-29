@@ -1,5 +1,9 @@
 # React Simple FLIP
 
+[![npm](https://img.shields.io/npm/v/react-simple-flip)](https://www.npmjs.com/package/react-simple-flip)
+[![Bundlephobia](https://img.shields.io/bundlephobia/minzip/react-simple-flip)](https://bundlephobia.com/package/react-simple-flip)
+[![jsDocs.io](https://img.shields.io/badge/jsDocs.io-reference-blue)](https://www.jsdocs.io/package/react-simple-flip)
+
 A library for FLIP animations in React.
 
 ![Example GIF](./example.gif)
