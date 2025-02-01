@@ -1,7 +1,7 @@
 /**
  * Options for {@link createSpring}.
  */
-interface SpringOptions {
+export interface SpringOptions {
   /**
    * Physical spring mass in kg.
    *

@@ -253,7 +253,7 @@ export function useFlipList<T>(
 }
 
 /**
- * Entry in the list of items maintained by {@link useFlipList}.
+ * Entry in the list of items returned by {@link useFlipList}.
  */
 export interface FlipListEntry<T> {
   /**
