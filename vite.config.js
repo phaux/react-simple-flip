@@ -1,10 +1,9 @@
-import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 import dts from "vite-plugin-dts"
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), dts({ rollupTypes: true })],
+  plugins: [react(), dts({ rollupTypes: true })],
   build: {
     lib: {
       entry: import.meta.dirname + "/src/index.tsx",

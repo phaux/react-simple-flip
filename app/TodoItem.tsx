@@ -8,7 +8,7 @@ export const TodoItem = forwardRef<HTMLDivElement, { todo: Todo } & ComponentPro
 
     return (
       <div
-        className={`flex flex-col gap-2 rounded p-2 ${className}`}
+        className={`flex-y gap-sm card ${className}`}
         style={{
           backgroundColor: todo.color,
           gridColumn: `span ${todo.size}`,
@@ -19,15 +19,34 @@ export const TodoItem = forwardRef<HTMLDivElement, { todo: Todo } & ComponentPro
         ref={ref}
       >
         <p className="flex-1">{todo.title}</p>
-        <div className="flex gap-2 justify-between">
-          <div className="flex gap-2 *:border *:border-current *:leading-0 *:size-6 *:rounded *:hover:bg-current/20">
-            <button onClick={() => dispatch({ type: "MOVE", id: todo.id, by: -1 })}>&lt;</button>
-            <button onClick={() => dispatch({ type: "RESIZE", id: todo.id, amount: -1 })}>X</button>
-            <button onClick={() => dispatch({ type: "RESIZE", id: todo.id, amount: 1 })}>O</button>
-            <button onClick={() => dispatch({ type: "MOVE", id: todo.id, by: 1 })}>&gt;</button>
+        <div className="flex-x gap-sm">
+          <div className="flex-x gap-sm">
+            <button
+              className="square"
+              onClick={() => dispatch({ type: "MOVE", id: todo.id, by: -1 })}
+            >
+              &lt;
+            </button>
+            <button
+              className="square"
+              onClick={() => dispatch({ type: "RESIZE", id: todo.id, amount: -1 })}
+            >
+              X
+            </button>
+            <button
+              className="square"
+              onClick={() => dispatch({ type: "RESIZE", id: todo.id, amount: 1 })}
+            >
+              O
+            </button>
+            <button
+              className="square"
+              onClick={() => dispatch({ type: "MOVE", id: todo.id, by: 1 })}
+            >
+              &gt;
+            </button>
           </div>
           <input
-            className="size-6 accent-current"
             type="checkbox"
             checked={todo.done}
             onChange={() => dispatch({ type: "TOGGLE", id: todo.id })}

@@ -32,7 +32,6 @@
     "semi": false
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.1",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
@@ -42,7 +41,6 @@
     "prettier": "^3.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.1",
     "typescript": "^5.4.2",
     "vite": "^6.0.11",
     "vite-plugin-dts": "^4.5.0",

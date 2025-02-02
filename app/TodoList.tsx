@@ -6,7 +6,7 @@ export function TodoList(props: { todos: Todo[]; showDone: boolean }) {
   const { todos, showDone } = props
 
   return (
-    <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(192px,1fr))]">
+    <div className="grid">
       <FlipList>
         {todos
           .filter((todo) => showDone || !todo.done)

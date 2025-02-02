@@ -81,8 +81,8 @@ export default function TodoApp() {
 
   return (
     <TodoContext.Provider value={dispatch}>
-      <main className="flex flex-col gap-8 p-8 mx-auto max-w-screen-md">
-        <h1 className="text-4xl font-bold">Animated TODO App</h1>
+      <main className="container flex-y gap-lg">
+        <h1>Animated TODO App</h1>
         <TodoFilters showDone={showDone} onToggleShowDone={() => setShowDone((v) => !v)} />
         <TodoList showDone={showDone} todos={todos} />
         <TodoAddForm />
