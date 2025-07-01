@@ -1,3 +1,4 @@
+/// <reference types="@vitest/browser/providers/playwright" />
 import { expect, test, vi } from "vitest"
 import { render } from "vitest-browser-react"
 import { FlipList } from "../src/FlipList.js"
