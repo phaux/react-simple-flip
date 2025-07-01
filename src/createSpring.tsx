@@ -5,41 +5,42 @@ export interface SpringOptions {
   /**
    * Physical spring mass in kg.
    *
-   * More mass means more inertia, which makes the spring move slower and animation last longer.
+   * Mass mostly influences animation duration.
+   * More mass means more inertia, which makes the spring accelerate slower.
    *
-   * Default: 0.5kg.
+   * @default 0.5kg
    */
   mass?: number
   /**
    * Physical damping coefficient in kg/s.
+   * Damping is a measure of resistance to motion.
    *
-   * Damping is a measure of resistance to motion, typically associated with viscous damping forces in mechanical systems.
+   * Damping mostly controls maximum velocity the spring can accelerate to.
+   * More damping means the spring will move slower or jiggle less if it overshoots.
    *
-   * More damping means the spring will stop faster and wont overshoot as much.
-   *
-   * Default: 15kg/s.
+   * @default 15kg/s
    */
   damping?: number
   /**
    * Physical spring stiffness in N/m.
-   *
    * Stiffness is the spring constant, which represents the force needed to compress or extend a spring by a unit length.
    *
+   * Stiffness mostly controls spring's acceleration.
    * More stiffness means the spring will accelerate faster and overshoot more.
    *
-   * Default: 200N/m.
+   * @default 200N/m
    */
   stiffness?: number
   /**
    * Initial velocity in m/s.
    *
-   * Default: 0m/s.
+   * @default 0m/s
    */
   velocity?: number
   /**
    * Number of samples per second to calculate.
    *
-   * Default: 20.
+   * @default 20
    */
   resolution?: number
 }
@@ -49,7 +50,9 @@ export interface SpringOptions {
  *
  * The trajectory of a spring moving from 0 to 1m will be calculated and turned into CSS easing function.
  *
- * Returns easing and duration as an options object which you can pass directly to {@link Element.animate}.
+ * @param options Spring options.
+ *
+ * @returns Easing and duration as an options object which you can pass directly to {@link Element.animate}.
  */
 export function createSpring(options: SpringOptions = {}): EffectTiming {
   const { mass = 0.5, damping = 15, stiffness = 200, velocity = 0, resolution = 20 } = options
@@ -73,5 +76,7 @@ export function createSpring(options: SpringOptions = {}): EffectTiming {
 
 /**
  * Default spring easing function.
+ *
+ * Result of calling {@link createSpring} with default options.
  */
 export const defaultSpring: EffectTiming = createSpring()
