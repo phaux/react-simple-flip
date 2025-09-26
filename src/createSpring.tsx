@@ -18,7 +18,7 @@ export interface SpringOptions {
    * Damping mostly controls maximum velocity the spring can accelerate to.
    * More damping means the spring will move slower or jiggle less if it overshoots.
    *
-   * @default 15kg/s
+   * @default 24kg/s
    */
   damping?: number
   /**
@@ -28,7 +28,7 @@ export interface SpringOptions {
    * Stiffness mostly controls spring's acceleration.
    * More stiffness means the spring will accelerate faster and overshoot more.
    *
-   * @default 200N/m
+   * @default 300N/m
    */
   stiffness?: number
   /**
@@ -40,7 +40,7 @@ export interface SpringOptions {
   /**
    * Number of samples per second to calculate.
    *
-   * @default 20
+   * @default 30
    */
   resolution?: number
 }
@@ -55,12 +55,12 @@ export interface SpringOptions {
  * @returns Easing and duration as an options object which you can pass directly to {@link Element.animate}.
  */
 export function createSpring(options: SpringOptions = {}): EffectTiming {
-  const { mass = 0.5, damping = 15, stiffness = 200, velocity = 0, resolution = 20 } = options
+  const { mass = 0.5, damping = 24, stiffness = 300, velocity = 0, resolution = 30 } = options
   const w0 = Math.sqrt(stiffness / mass)
   const zeta = damping / (2 * Math.sqrt(stiffness * mass))
   const wd = zeta < 1 ? w0 * Math.sqrt(1 - zeta ** 2) : 0
   const b = zeta < 1 ? (zeta * w0 + -velocity) / wd : -velocity + w0
-  const duration = zeta < 1 ? 6 / zeta / w0 : 6 / w0
+  const duration = zeta < 1 ? 8 / zeta / w0 : 8 / w0
   const samples = Array.from({ length: resolution * duration }).map((_, i) => {
     const t = i / resolution
     const y =
@@ -70,7 +70,7 @@ export function createSpring(options: SpringOptions = {}): EffectTiming {
     return 1 - y
   })
   samples.push(1)
-  const easing = `linear(${samples.map((y) => y.toFixed(2)).join(", ")})`
+  const easing = `linear(${samples.map((y) => y.toFixed(3)).join(", ")})`
   return { easing, duration: duration * 1000 }
 }
 

@@ -345,4 +345,4 @@ export async function animateExit(
 /**
  * The default keyframe styles to animate from/to when entering/exiting an element.
  */
-export const defaultHiddenStyle: Keyframe = { opacity: 0, scale: 0.8 }
+export const defaultHiddenStyle: Keyframe = { opacity: 0, scale: 0.9 }
