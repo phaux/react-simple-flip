@@ -7,6 +7,7 @@ export function TodoFilters(props: { showDone: boolean; onToggleShowDone: () => 
 
   return (
     <div className="flex-x gap-sm">
+      <button onClick={() => dispatch({ type: "RESET" })}>Reset</button>
       <label className="flex-x gap-sm">
         <input type="checkbox" checked={showDone} onChange={onToggleShowDone} />
         Show Done

@@ -20,6 +20,7 @@ export type TodoAction =
   | { type: "MOVE"; id: string; by: number }
   | { type: "RESIZE"; id: string; amount: number }
   | { type: "SORT"; by: "id" | "title" | "size" }
+  | { type: "RESET" }
 
 function todoReducer(todos: Todo[], action: TodoAction) {
   switch (action.type) {
@@ -55,6 +56,9 @@ function todoReducer(todos: Todo[], action: TodoAction) {
         .filter((todo) => todo != null)
     case "SORT":
       return [...todos].sort((a, b) => (a[action.by] > b[action.by] ? 1 : -1))
+    case "RESET": {
+      return defaultTodos
+    }
     default:
       return todos
   }
@@ -63,6 +67,7 @@ function todoReducer(todos: Todo[], action: TodoAction) {
 const defaultTodos: Todo[] = [
   { id: "1234", title: "Buy milk", color: "lch(50 50 240deg / 50%)", size: 1, done: false },
   { id: "4321", title: "Feed cat", color: "lch(50 50 120deg / 50%)", size: 1, done: false },
+  { id: "1000", title: "Take out trash", color: "lch(50 50 180deg / 50%)", size: 1, done: false },
   { id: "1337", title: "Learn React", color: "lch(50 50 0deg / 50%)", size: 1, done: true },
   {
     id: "2137",
