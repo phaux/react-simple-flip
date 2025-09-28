@@ -58,8 +58,37 @@ test("FlipList works", async () => {
     </FlipList>,
   )
   await expect.element(doc.getByText("Foo4")).toBeInTheDocument()
-  expect(onExit).toHaveBeenCalledTimes(1)
-  expect(onMove).toHaveBeenCalledTimes(2)
   await expect.element(doc.getByText("Bar3")).not.toBeInTheDocument()
+  expect(onExit).toHaveBeenCalledTimes(1)
   expect(onMove).toHaveBeenCalledTimes(3)
+})
+
+test("new items aren't rendered until exiting animation finishes", async () => {
+  const onEnter = vi.fn()
+  const onExit = vi.fn()
+  const options = { onEnter, onExit }
+  const doc = render(
+    <FlipList {...options}>
+      <div key={1}>Foo</div>
+    </FlipList>,
+  )
+  await expect.element(doc.getByText("Foo")).toBeInTheDocument()
+  expect(onEnter).toHaveBeenCalledTimes(1)
+
+  const exit = Promise.withResolvers<void>()
+  onExit.mockReturnValueOnce(exit.promise)
+  doc.rerender(
+    <FlipList {...options}>
+      <div key={2}>Bar</div>
+    </FlipList>,
+  )
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  await expect.element(doc.getByText("Foo")).toBeInTheDocument()
+  expect(onEnter).toHaveBeenCalledTimes(1)
+  expect(onExit).toHaveBeenCalledTimes(1)
+  await expect.element(doc.getByText("Bar")).not.toBeInTheDocument()
+  exit.resolve()
+  await expect.element(doc.getByText("Bar")).toBeInTheDocument()
+  await expect.element(doc.getByText("Foo")).not.toBeInTheDocument()
+  expect(onEnter).toHaveBeenCalledTimes(2)
 })

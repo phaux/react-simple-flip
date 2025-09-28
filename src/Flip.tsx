@@ -50,8 +50,11 @@ export interface FlipOptions {
 /**
  * Animates an element whenever its position in the document changes between rerenders.
  *
- * On every rerender, reads element's position and size and compare it to values from previous render or last window resize.
+ * On every rerender, reads element's position and size and compare it to values from previous render.
  * If values are different, calls the provided callback with the calculated transform.
+ *
+ * By default, the element position is calculated relative to {@link HTMLElement.offsetParent}.
+ * You can control the parent to animate relative to with `position: relative`.
  */
 export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions): void {
   const {
@@ -62,15 +65,22 @@ export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions
   const rect = useRef<DOMRect>(null)
 
   useEffect(() => {
-    // Refresh last position on window resize.
-    const onResize = () => {
-      if (ref.current != null) {
-        rect.current = getElementRect(ref.current)
-      }
-    }
-    window.addEventListener("resize", onResize)
-    return () => window.removeEventListener("resize", onResize)
-  }, [getElementOffset])
+    const elem = ref.current
+    if (elem == null) return
+    const parent = elem.offsetParent 
+    if (parent == null) return
+    // Watch for parent resizes.
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        // Update last computed position.
+        rect.current = getElementRect(elem)
+      }, 100)
+    })
+    observer.observe(parent)
+    return () => observer.disconnect()
+  })
 
   useEffect(() => {
     // Try to animate on every rerender.

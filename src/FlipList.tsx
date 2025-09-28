@@ -1,5 +1,4 @@
 import {
-  Children,
   cloneElement,
   createRef,
   type JSX,
@@ -8,6 +7,8 @@ import {
   type Ref,
   type RefObject,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react"
@@ -40,19 +41,11 @@ export interface FlipListOptions {
    * This is called every time when a new child with a given key is rendered,
    * because it was added to the children array.
    *
-   * The passed signal is aborted when the element is removed again before the animation finishes.
-   * It's usually safe to ignore the signal.
-   *
    * `fromStyle` and `timing` are passed directly from {@link FlipListOptions}.
    *
    * Default: {@link animateEnter}.
    */
-  onEnter?: (
-    elem: Element,
-    signal: AbortSignal,
-    fromStyle: Keyframe,
-    timing: EffectTiming,
-  ) => Promise<void>
+  onEnter?: (elem: Element, fromStyle: Keyframe, timing: EffectTiming) => Promise<void>
 
   /**
    * Callback function which animates the element when it exits.
@@ -69,12 +62,7 @@ export interface FlipListOptions {
    *
    * Default: {@link animateExit}.
    */
-  onExit?: (
-    elem: Element,
-    signal: AbortSignal,
-    toStyle: Keyframe,
-    timing: EffectTiming,
-  ) => Promise<void>
+  onExit?: (elem: Element, toStyle: Keyframe, timing: EffectTiming) => Promise<void>
 
   /**
    * Callback function which animates the element when it moves.
@@ -103,22 +91,26 @@ export interface FlipListOptions {
 }
 
 /**
- * Takes a list of items and maintains a list of entries with their associated refs,
- * last computed element's positions, and keeps already removed items.
- *
- * You can use resulting list to associate rendered elements with refs
- * and keep rendering removed elements until their animation finishes.
+ * Takes a list of items and maintains a list of entries with their associated refs.
+ * You can use resulting list to associate rendered elements with refs.
  *
  * Provided callbacks are called when an item is added or removed from the list
  * or when its associated last computed position changed.
  *
- * Every item is identified by a unique key.
+ * The list updates are throttled.
+ * Conflicting list changes are delayed until currently running callbacks finish.
+ * This means that old children can be rendered at first instead of currently passed ones.
+ *
+ * By default, element positions are calculated relative to {@link HTMLElement.offsetParent}.
+ * You can control the parent to animate relative to with `position: relative`.
+ *
+ * Every item must be identified by a unique key.
  */
 export function useFlipList<T>(
-  items: T[],
+  newItems: readonly T[],
   getKey: (item: T) => Key,
   options: FlipListOptions,
-): FlipListEntry<T>[] {
+): readonly FlipListEntry<T>[] {
   const {
     timing = defaultSpring,
     hiddenStyle = defaultHiddenStyle,
@@ -127,129 +119,119 @@ export function useFlipList<T>(
     onMove = animateMove,
     getElementRect = getElementOffset,
   } = options
-  const [entries, setEntries] = useState<FlipListEntry<T>[]>([])
-  const exits = useRef(new Map<Key, AbortController>())
-  const enters = useRef(new Map<Key, AbortController>())
+  const [items, setItems] = useState(newItems)
+  const refs = useRef(new Map<Key, RefObject<HTMLElement | null>>())
   const rects = useRef(new Map<Key, DOMRect>())
+  const preUpdateAnim = useRef(Promise.resolve<unknown>(undefined))
+  const postUpdateAnim = useRef(Promise.resolve<unknown>(undefined))
 
+  // Pre-update animations (exits)
   useEffect(() => {
-    // Update our internal entries list.
-    setEntries((entries) => {
-      let newIdx = 0
-      // Iterate over incoming items.
+    let cancelled = false
+    // Queue all updates.
+    preUpdateAnim.current = preUpdateAnim.current.then(async () => {
+      // Wait for post-update animations to finish.
+      await postUpdateAnim.current
+      // Only process most recent update.
+      if (cancelled) return
+
+      // Animate out items that are no longer in the new list.
+      const promises = new Set<Promise<void>>()
       for (const item of items) {
         const key = getKey(item)
-        // Find existing entry index for this item.
-        const oldIdx = entries.findIndex((entry) => getKey(entry.item) === key)
-        // Get old entry's ref or create a new one.
-        const ref = oldIdx >= 0 ? entries[oldIdx]!.ref : createRef<HTMLElement>()
-        // Advance new index until non-exiting entry is found.
-        while (true) {
-          const e = entries[newIdx]
-          if (!e) break
-          const k = getKey(e.item)
-          if (items.some((item) => getKey(item) === k)) break
-          newIdx++
-        }
-        // Remove existing entry.
-        if (oldIdx >= 0) entries = entries.toSpliced(oldIdx, 1)
-        // Add entry at new index.
-        entries = entries.toSpliced(newIdx, 0, { item, ref })
-        // Increment new index.
-        newIdx++
-      }
-      return entries
-    })
-  }, [items, getKey])
-
-  useEffect(() => {
-    // Start entering entries which were in the incoming children list.
-    for (const entry of entries) {
-      const key = getKey(entry.item)
-      // If incoming children list doesn't contain this key, it's not entering.
-      if (!items.some((item) => getKey(item) === key)) continue
-      // If entry is already entering, skip it.
-      const enterController = enters.current.get(key)
-      if (enterController && !enterController.signal.aborted) continue
-      // If entry is exiting, cancel it.
-      const exitController = exits.current.get(key)
-      if (exitController) exitController.abort()
-      // Start entering this entry.
-      const controller = new AbortController()
-      Promise.resolve().then(() => {
-        if (entry.ref.current) {
-          return onEnter(entry.ref.current, controller.signal, hiddenStyle, timing)
-        }
-      })
-      enters.current.set(key, controller)
-    }
-  })
-
-  useEffect(() => {
-    // Start exiting entries which are not in the incoming children list.
-    for (const entry of entries) {
-      const key = getKey(entry.item)
-      // If incoming children list contains this key, it's not exiting.
-      if (items.some((item) => getKey(item) === key)) continue
-      // If entry is already exiting, skip it.
-      const exitController = exits.current.get(key)
-      if (exitController && !exitController.signal.aborted) continue
-      // If entry is entering, cancel it.
-      const enterController = enters.current.get(key)
-      if (enterController) enterController.abort()
-      // Start exiting this entry.
-      const controller = new AbortController()
-      Promise.resolve()
-        .then(() => {
-          if (entry.ref.current) {
-            return onExit(entry.ref.current, controller.signal, hiddenStyle, timing)
-          }
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setEntries((entries) => entries.filter((entry) => getKey(entry.item) !== key))
-            exits.current.delete(key)
-            enters.current.delete(key)
+        if (!newItems.some((newItem) => getKey(newItem) === key)) {
+          // This item needs to exit.
+          const ref = refs.current.get(key)
+          if (ref?.current) {
             rects.current.delete(key)
+            promises.add(onExit(ref.current, hiddenStyle, timing))
           }
-        })
-      exits.current.set(key, controller)
-    }
-  })
-
-  useEffect(() => {
-    // Refresh positions on window resize.
-    const handleResize = () => {
-      for (const entry of entries) {
-        if (entry.ref.current) {
-          const key = getKey(entry.item)
-          rects.current.set(key, getElementRect(entry.ref.current))
         }
       }
-    }
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [entries])
+      // Wait for all exit animations to finish.
+      if (promises.size > 0) {
+        await Promise.all(promises).catch(() => {})
+      }
 
-  useEffect(() => {
-    // Try to animate move on every rerender.
-    for (const entry of entries) {
-      if (entry.ref.current) {
-        const key = getKey(entry.item)
-        const newRect = getElementRect(entry.ref.current)
+      // Update rendered items.
+      setItems(newItems)
+
+      // Give a chance for effects to run again before processing next update.
+      // This will allow post-update effect to run next.
+      await new Promise((resolve) => setTimeout(resolve, 1))
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [items, newItems])
+
+  // Post-update animations (moves and enters)
+  useLayoutEffect(() => {
+    // Animate all existing entries.
+    const promises = new Set<Promise<void>>()
+    for (const item of items) {
+      const key = getKey(item)
+      const ref = refs.current.get(key)
+      if (ref?.current) {
+        const newRect = getElementRect(ref.current)
         const oldRect = rects.current.get(key)
         if (oldRect) {
+          // Animate move
           const style = getDeltaTransform(newRect, oldRect)
           if (style) {
-            onMove(entry.ref.current, style, timing)
+            promises.add(onMove(ref.current, style, timing))
           }
+        } else {
+          // Animate enter
+          promises.add(onEnter(ref.current, hiddenStyle, timing))
         }
+        // Set last computed position.
         rects.current.set(key, newRect)
       }
     }
+    // Add all animations to the promise chain.
+    if (promises.size > 0) {
+      postUpdateAnim.current = postUpdateAnim.current.then(() =>
+        Promise.all(promises).catch(() => {}),
+      )
+    }
+  }, [items])
+
+  useEffect(() => {
+    const parent = refs.current.values().next().value?.current?.offsetParent
+    if (!parent) return
+    // Watch for parent resizes.
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        // Update last computed positions.
+        for (const [key, ref] of refs.current.entries()) {
+          if (ref.current && rects.current.has(key)) {
+            rects.current.set(key, getElementRect(ref.current))
+          }
+        }
+      }, 100)
+    })
+    observer.observe(parent)
+    return () => observer.disconnect()
   })
 
-  return entries
+  // Return items with their refs
+  return useMemo(() => {
+    const entries: FlipListEntry<T>[] = []
+    const newRefs = new Map<Key, RefObject<HTMLElement | null>>()
+    for (const item of items) {
+      const key = getKey(item)
+      let ref = refs.current.get(key)
+      if (!ref) ref = createRef()
+      newRefs.set(key, ref)
+      entries.push({ item, ref })
+    }
+    refs.current = newRefs
+    return entries
+  }, [items])
 }
 
 /**
@@ -292,7 +274,10 @@ export interface FlipListProps extends FlipListOptions {
  */
 export function FlipList(props: FlipListProps): JSX.Element[] {
   const { children, ...options } = props
-  const childArray = Array.isArray(children) ? children : children == null ? [] : [children]
+  const childArray = useMemo(
+    () => (Array.isArray(children) ? children : children == null ? [] : [children]),
+    [children],
+  )
   const entries = useFlipList(childArray, getChildKey, options)
   return entries.map((entry) => cloneElement(entry.item, { ref: entry.ref }))
 }
@@ -302,28 +287,22 @@ const getChildKey = (child: ReactElement) => child.key!
 /**
  * Animates given element from a given keyframe.
  *
- * The signal is ignored.
- *
  * Doesn't do anything in prefers-reduced-motion mode.
  *
  * Resolves when animation is finished.
  */
 export async function animateEnter(
   elem: Element,
-  signal: AbortSignal,
   fromKeyframe: Keyframe,
   timing: EffectTiming,
 ): Promise<void> {
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const animation = elem.animate([fromKeyframe, {}], { fill: "backwards", ...timing })
-    await animation.finished
+    await elem.animate([fromKeyframe, {}], timing).finished
   }
 }
 
 /**
  * Animates given element to a given keyframe.
- *
- * When the signal is aborted, the animation is reversed.
  *
  * Doesn't do anything in prefers-reduced-motion mode.
  *
@@ -331,14 +310,11 @@ export async function animateEnter(
  */
 export async function animateExit(
   elem: HTMLElement,
-  signal: AbortSignal,
   toKeyframe: Keyframe,
   timing: EffectTiming,
 ): Promise<void> {
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const animation = elem.animate([{}, toKeyframe], { fill: "forwards", ...timing })
-    signal.addEventListener("abort", () => animation.reverse())
-    await animation.finished
+    await elem.animate([{}, toKeyframe], { ...timing, fill: "forwards" }).finished
   }
 }
 
