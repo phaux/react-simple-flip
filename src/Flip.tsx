@@ -17,60 +17,72 @@ import { defaultSpring } from "./createSpring.js"
  */
 export interface FlipOptions {
   /**
-   * CSS Animation timing options. Passed directly to {@link onMove}.
+   * CSS Animation timing options. Passed directly to animation callbacks.
    *
    * Default: {@link defaultSpring}.
    */
-  timing?: EffectTiming
+  timing?: EffectTiming | undefined
 
   /**
-   * Callback function which animates the element when it moves.
+   * Callback function which animates an element when it moves.
    *
-   * Default: {@link animateMove}.
-   * You can override it to change the animation behavior.
+   * This is called whenever an element's computed position or size changed since previous render.
+   *
+   * Default: {@link animateFrom}.
+   *
+   * Pass `null` to disable move animations.
+   *
+   * The returned promise will be used to delay subsequent animations.
    */
-  onMove?: (elem: Element, transform: Keyframe, timing: EffectTiming) => Promise<void>
+  onMove?:
+    | ((elem: Element, transform: Keyframe, timing: EffectTiming) => Promise<void>)
+    | null
+    | undefined
 
   /**
    * Function used to compute element's position and size.
    *
-   * Called on every rerender.
-   * If the values returned by this function change, the element will be animated.
-   *
-   * Only the difference between old and new value is used for the animation.
+   * Only the difference between returned values is used for the animation.
    * The absolute returned position doesn't matter.
-   *
-   * You can override it to change the parent to animate relative to.
    *
    * Default: {@link getElementOffset}.
    */
-  getElementRect?: (elem: HTMLElement) => DOMRect
+  getElementRect?: ((elem: HTMLElement) => DOMRect) | undefined
 }
 
 /**
- * Animates an element whenever its position in the document changes between rerenders.
+ * Calls provided callback whenever element's position changes between rerenders.
  *
- * On every rerender, reads element's position and size and compare it to values from previous render or last window resize.
+ * On every rerender, reads element's position and size and compare it to the previous value.
  * If values are different, calls the provided callback with the calculated transform.
+ *
+ * Additionally, recomputes the last position when the element's offsetParent resizes.
  */
 export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions): void {
   const {
-    onMove = animateMove,
+    onMove = animateFrom,
     timing = defaultSpring,
     getElementRect = getElementOffset,
   } = options
   const rect = useRef<DOMRect>(null)
 
   useEffect(() => {
-    // Refresh last position on window resize.
-    const onResize = () => {
-      if (ref.current != null) {
-        rect.current = getElementRect(ref.current)
-      }
-    }
-    window.addEventListener("resize", onResize)
-    return () => window.removeEventListener("resize", onResize)
-  }, [getElementOffset])
+    const elem = ref.current
+    if (elem == null) return
+    const parent = elem.offsetParent
+    if (parent == null) return
+    // Watch for parent resizes.
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        // Update last computed position.
+        rect.current = getElementRect(elem)
+      }, 100)
+    })
+    observer.observe(parent)
+    return () => observer.disconnect()
+  })
 
   useEffect(() => {
     // Try to animate on every rerender.
@@ -79,7 +91,7 @@ export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions
       if (rect.current) {
         const style = getDeltaTransform(newRect, rect.current)
         if (style) {
-          onMove(ref.current, style, timing)
+          onMove?.(ref.current, style, timing)
         }
       }
       rect.current = newRect
@@ -134,20 +146,24 @@ export function FlipWrapper(props: FlipWrapperProps): JSX.Element {
  * Animates given element from a given keyframe.
  *
  * Doesn't do anything in prefers-reduced-motion mode.
+ *
+ * Resolves when the animation is finished.
  */
-export async function animateMove(
+export async function animateFrom(
   elem: Element,
-  fromKeyframe: Keyframe,
+  keyframe: Keyframe,
   timing: EffectTiming,
 ): Promise<void> {
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const animation = elem.animate([fromKeyframe, {}], timing)
-    await animation.finished
+    await elem.animate([keyframe, {}], timing).finished
   }
 }
 
 /**
  * Returns element's {@link HTMLElement.offsetLeft}, {@link HTMLElement.offsetWidth}, etc. as a {@link DOMRect}.
+ *
+ * Returned positions are relative to {@link HTMLElement.offsetParent}.
+ * This means you can control the parent to animate relative to with `position: relative`.
  */
 export function getElementOffset(elem: HTMLElement): DOMRect {
   return new DOMRect(elem.offsetLeft, elem.offsetTop, elem.offsetWidth, elem.offsetHeight)

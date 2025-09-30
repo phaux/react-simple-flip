@@ -6,7 +6,7 @@ export function TodoList(props: { todos: Todo[]; showDone: boolean }) {
   const { todos, showDone } = props
 
   return (
-    <div className="grid">
+    <div className="grid relative">
       <FlipList>
         {todos
           .filter((todo) => showDone || !todo.done)

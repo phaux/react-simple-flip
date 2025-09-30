@@ -56,6 +56,11 @@ body {
   max-width: 50rem;
 }
 
+.relative {
+  position: relative;
+}
+
+textarea,
 input[type="text"] {
   background: none;
   padding: 8px;

@@ -10,7 +10,7 @@ export interface SpringOptions {
    *
    * @default 0.5kg
    */
-  mass?: number
+  mass?: number | undefined
   /**
    * Physical damping coefficient in kg/s.
    * Damping is a measure of resistance to motion.
@@ -20,7 +20,7 @@ export interface SpringOptions {
    *
    * @default 24kg/s
    */
-  damping?: number
+  damping?: number | undefined
   /**
    * Physical spring stiffness in N/m.
    * Stiffness is the spring constant, which represents the force needed to compress or extend a spring by a unit length.
@@ -30,19 +30,19 @@ export interface SpringOptions {
    *
    * @default 300N/m
    */
-  stiffness?: number
+  stiffness?: number | undefined
   /**
    * Initial velocity in m/s.
    *
    * @default 0m/s
    */
-  velocity?: number
+  velocity?: number | undefined
   /**
    * Number of samples per second to calculate.
    *
    * @default 30
    */
-  resolution?: number
+  resolution?: number | undefined
 }
 
 /**
@@ -56,11 +56,15 @@ export interface SpringOptions {
  */
 export function createSpring(options: SpringOptions = {}): EffectTiming {
   const { mass = 0.5, damping = 24, stiffness = 300, velocity = 0, resolution = 30 } = options
+  if (mass <= 0) throw new Error("Spring mass must be greater than 0")
+  if (stiffness <= 0) throw new Error("Spring stiffness must be greater than 0")
+  if (damping < 0) throw new Error("Spring damping must be greater than or equal to 0")
+  if (resolution <= 0) throw new Error("Spring resolution must be greater than 0")
   const w0 = Math.sqrt(stiffness / mass)
   const zeta = damping / (2 * Math.sqrt(stiffness * mass))
   const wd = zeta < 1 ? w0 * Math.sqrt(1 - zeta ** 2) : 0
   const b = zeta < 1 ? (zeta * w0 + -velocity) / wd : -velocity + w0
-  const duration = zeta < 1 ? 8 / zeta / w0 : 8 / w0
+  const duration = Math.min(zeta < 1 ? 8 / zeta / w0 : 8 / w0, 10) // max 10s
   const samples = Array.from({ length: resolution * duration }).map((_, i) => {
     const t = i / resolution
     const y =
