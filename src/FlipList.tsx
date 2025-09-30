@@ -13,27 +13,19 @@ import {
   useState,
 } from "react"
 import { defaultSpring } from "./createSpring.js"
-import { animateMove, getDeltaTransform, getElementOffset } from "./Flip.js"
+import { animateFrom, getDeltaTransform, getElementOffset, type FlipOptions } from "./Flip.js"
 
 /**
  * Options for {@link useFlipList}.
  */
-export interface FlipListOptions {
-  /**
-   * CSS Animation timing options.
-   * Passed directly to {@link onMove}, {@link onEnter} and {@link onExit}.
-   *
-   * Default: {@link defaultSpring}.
-   */
-  timing?: EffectTiming
-
+export interface FlipListOptions extends FlipOptions {
   /**
    * Keyframe styles to animate from/to when entering/exiting an element.
    * Passed directly to {@link onEnter} and {@link onExit}.
    *
    * Default: {@link defaultHiddenStyle}.
    */
-  hiddenStyle?: Keyframe
+  hiddenStyle?: Keyframe | undefined
 
   /**
    * Callback function which animates the element when it enters.
@@ -41,11 +33,16 @@ export interface FlipListOptions {
    * This is called every time when a new child with a given key is rendered,
    * because it was added to the children array.
    *
-   * `fromStyle` and `timing` are passed directly from {@link FlipListOptions}.
+   * The returned promise is used to delay subsequent animations.
    *
-   * Default: {@link animateEnter}.
+   * Default: {@link animateFrom}.
+   *
+   * Pass `null` to disable enter animations.
    */
-  onEnter?: (elem: Element, fromStyle: Keyframe, timing: EffectTiming) => Promise<void>
+  onEnter?:
+    | ((elem: Element, fromStyle: Keyframe, timing: EffectTiming) => Promise<void>)
+    | null
+    | undefined
 
   /**
    * Callback function which animates the element when it exits.
@@ -53,56 +50,31 @@ export interface FlipListOptions {
    * This is called every time when a child with a given key would not be rendered anymore,
    * because it was removed from the children array.
    *
-   * The passed signal is aborted when the element is added again before the animation finishes.
-   * You can use this signal to reverse the animation when aborted.
-   *
-   * `toStyle` and `timing` are passed directly from {@link FlipListOptions}.
-   *
    * The returned promise is used to delay the removal of the element from the DOM until the animation finishes.
    *
-   * Default: {@link animateExit}.
+   * Default: {@link animateTo}.
+   *
+   * Pass `null` to disable exit animations.
    */
-  onExit?: (elem: Element, toStyle: Keyframe, timing: EffectTiming) => Promise<void>
-
-  /**
-   * Callback function which animates the element when it moves.
-   *
-   * This is called whenever element's position changed between rerenders.
-   * Not just when it's index in the children array changed.
-   *
-   * Default: {@link animateMove}.
-   */
-  onMove?: (elem: Element, fromKeyframe: Keyframe, timing: EffectTiming) => Promise<void>
-
-  /**
-   * Function used to compute element's position and size.
-   *
-   * Called on every rerender for every child.
-   * If the values returned by this function change, the element will be animated.
-   *
-   * Only the difference between old and new value is used for the animation.
-   * The absolute returned position doesn't matter.
-   *
-   * You can override it to change the parent to animate relative to.
-   *
-   * Default: {@link getElementOffset}.
-   */
-  getElementRect?: (elem: HTMLElement) => DOMRect
+  onExit?:
+    | ((elem: Element, toStyle: Keyframe, timing: EffectTiming) => Promise<void>)
+    | null
+    | undefined
 }
 
 /**
- * Takes a list of items and maintains a list of entries with their associated refs.
- * You can use resulting list to associate rendered elements with refs.
+ * Takes a list of items and returns a list of entries with their associated refs.
  *
- * Provided callbacks are called when an item is added or removed from the list
- * or when its associated last computed position changed.
+ * Calls enter/exit callbacks when items are added or removed from the list.
+ *
+ * On every rerender, reads elements' positions and sizes and compare them to values from previous render.
+ * If values are different, calls the move callback with the calculated transform.
+ *
+ * Additionally, recomputes the positions when the offsetParent resizes.
  *
  * The list updates are throttled.
  * Conflicting list changes are delayed until currently running callbacks finish.
- * This means that old children can be rendered at first instead of currently passed ones.
- *
- * By default, element positions are calculated relative to {@link HTMLElement.offsetParent}.
- * You can control the parent to animate relative to with `position: relative`.
+ * This means that children from previous renders can be returned instead of currently passed ones.
  *
  * Every item must be identified by a unique key.
  */
@@ -114,9 +86,9 @@ export function useFlipList<T>(
   const {
     timing = defaultSpring,
     hiddenStyle = defaultHiddenStyle,
-    onEnter = animateEnter,
-    onExit = animateExit,
-    onMove = animateMove,
+    onEnter = animateFrom,
+    onExit = animateTo,
+    onMove = animateFrom,
     getElementRect = getElementOffset,
   } = options
   const [items, setItems] = useState(newItems)
@@ -136,7 +108,7 @@ export function useFlipList<T>(
       if (cancelled) return
 
       // Animate out items that are no longer in the new list.
-      const promises = new Set<Promise<void>>()
+      const promises = new Set<Promise<unknown> | null | undefined>()
       for (const item of items) {
         const key = getKey(item)
         if (!newItems.some((newItem) => getKey(newItem) === key)) {
@@ -144,7 +116,7 @@ export function useFlipList<T>(
           const ref = refs.current.get(key)
           if (ref?.current) {
             rects.current.delete(key)
-            promises.add(onExit(ref.current, hiddenStyle, timing))
+            promises.add(onExit?.(ref.current, hiddenStyle, timing))
           }
         }
       }
@@ -169,7 +141,7 @@ export function useFlipList<T>(
   // Post-update animations (moves and enters)
   useLayoutEffect(() => {
     // Animate all existing entries.
-    const promises = new Set<Promise<void>>()
+    const promises = new Set<Promise<void> | null | undefined>()
     for (const item of items) {
       const key = getKey(item)
       const ref = refs.current.get(key)
@@ -180,11 +152,11 @@ export function useFlipList<T>(
           // Animate move
           const style = getDeltaTransform(newRect, oldRect)
           if (style) {
-            promises.add(onMove(ref.current, style, timing))
+            promises.add(onMove?.(ref.current, style, timing))
           }
         } else {
           // Animate enter
-          promises.add(onEnter(ref.current, hiddenStyle, timing))
+          promises.add(onEnter?.(ref.current, hiddenStyle, timing))
         }
         // Set last computed position.
         rects.current.set(key, newRect)
@@ -285,36 +257,19 @@ export function FlipList(props: FlipListProps): JSX.Element[] {
 const getChildKey = (child: ReactElement) => child.key!
 
 /**
- * Animates given element from a given keyframe.
- *
- * Doesn't do anything in prefers-reduced-motion mode.
- *
- * Resolves when animation is finished.
- */
-export async function animateEnter(
-  elem: Element,
-  fromKeyframe: Keyframe,
-  timing: EffectTiming,
-): Promise<void> {
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    await elem.animate([fromKeyframe, {}], timing).finished
-  }
-}
-
-/**
  * Animates given element to a given keyframe.
  *
  * Doesn't do anything in prefers-reduced-motion mode.
  *
  * Resolves when animation is finished.
  */
-export async function animateExit(
+export async function animateTo(
   elem: HTMLElement,
-  toKeyframe: Keyframe,
+  keyframe: Keyframe,
   timing: EffectTiming,
 ): Promise<void> {
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    await elem.animate([{}, toKeyframe], { ...timing, fill: "forwards" }).finished
+    await elem.animate([{}, keyframe], { ...timing, fill: "forwards" }).finished
   }
 }
 
