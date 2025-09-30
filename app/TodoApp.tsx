@@ -1,7 +1,8 @@
 import { createContext, useReducer, useState, type ActionDispatch } from "react"
 import { TodoAddForm } from "./TodoAddForm.js"
-import { TodoList } from "./TodoList.js"
 import { TodoFilters } from "./TodoFilters.js"
+import { TodoList } from "./TodoList.js"
+import { TodoSettings } from "./TodoSettings.js"
 
 export interface TodoData {
   title: string
@@ -83,13 +84,26 @@ export const TodoContext = createContext<ActionDispatch<[TodoAction]>>(null as a
 export default function TodoApp() {
   const [todos, dispatch] = useReducer(todoReducer, defaultTodos)
   const [showDone, setShowDone] = useState(true)
+  const [renderList, setRenderList] = useState(true)
+  const [animateMount, setAnimateMount] = useState(false)
 
   return (
     <TodoContext.Provider value={dispatch}>
       <main className="container flex-y gap-lg">
-        <h1>Animated TODO App</h1>
+        <div className="flex-x flex-wrap gap-lg">
+          <h1 className="flex-1">Animated TODO App</h1>
+          <TodoSettings
+            renderList={renderList}
+            animateMount={animateMount}
+            onToggleRenderList={() => setRenderList((v) => !v)}
+            onToggleAnimateMount={() => setAnimateMount((v) => !v)}
+          />
+        </div>
+
         <TodoFilters showDone={showDone} onToggleShowDone={() => setShowDone((v) => !v)} />
-        <TodoList showDone={showDone} todos={todos} />
+
+        {renderList && <TodoList showDone={showDone} todos={todos} animateMount={animateMount} />}
+
         <TodoAddForm />
       </main>
     </TodoContext.Provider>

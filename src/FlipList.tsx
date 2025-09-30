@@ -60,6 +60,13 @@ export interface FlipListOptions extends FlipOptions {
     | ((elem: Element, toStyle: Keyframe, timing: EffectTiming) => Promise<void>)
     | null
     | undefined
+
+  /**
+   * If true, will animate items on the first render as if they were entering.
+   *
+   * Default: `false`.
+   */
+  animateMount?: boolean | undefined
 }
 
 /**
@@ -90,12 +97,14 @@ export function useFlipList<T>(
     onExit = animateTo,
     onMove = animateFrom,
     getElementRect = getElementOffset,
+    animateMount = false,
   } = options
   const [items, setItems] = useState(newItems)
   const refs = useRef(new Map<Key, RefObject<HTMLElement | null>>())
   const rects = useRef(new Map<Key, DOMRect>())
   const preUpdateAnim = useRef(Promise.resolve<unknown>(undefined))
   const postUpdateAnim = useRef(Promise.resolve<unknown>(undefined))
+  const firstRender = useRef(true)
 
   // Pre-update animations (exits)
   useEffect(() => {
@@ -154,7 +163,7 @@ export function useFlipList<T>(
           if (style) {
             promises.add(onMove?.(ref.current, style, timing))
           }
-        } else {
+        } else if (!firstRender.current || animateMount) {
           // Animate enter
           promises.add(onEnter?.(ref.current, hiddenStyle, timing))
         }
@@ -168,6 +177,7 @@ export function useFlipList<T>(
         Promise.all(promises).catch(() => {}),
       )
     }
+    firstRender.current = false
   }, [items])
 
   useEffect(() => {
@@ -213,13 +223,13 @@ export interface FlipListEntry<T> {
   /**
    * The original item from the incoming items list.
    */
-  item: T
+  readonly item: T
   /**
    * Ref you can use to associate this entry with a rendered element.
    *
    * It will be passed to the callbacks used to animate the element.
    */
-  ref: RefObject<HTMLElement | null>
+  readonly ref: RefObject<HTMLElement | null>
 }
 
 /**

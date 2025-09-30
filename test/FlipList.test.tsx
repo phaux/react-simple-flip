@@ -19,7 +19,7 @@ test("FlipList works", async () => {
     </FlipList>,
   )
   await expect.element(doc.getByText("Foo")).toBeInTheDocument()
-  expect(onEnter).toHaveBeenCalledTimes(2)
+  expect(onEnter).toHaveBeenCalledTimes(0)
   expect(onMove).toHaveBeenCalledTimes(0)
   doc.rerender(
     <FlipList {...options}>
@@ -73,7 +73,7 @@ test("new items aren't rendered until exiting animation finishes", async () => {
     </FlipList>,
   )
   await expect.element(doc.getByText("Foo")).toBeInTheDocument()
-  expect(onEnter).toHaveBeenCalledTimes(1)
+  expect(onEnter).toHaveBeenCalledTimes(0)
 
   const exit = Promise.withResolvers<void>()
   onExit.mockReturnValueOnce(exit.promise)
@@ -84,11 +84,23 @@ test("new items aren't rendered until exiting animation finishes", async () => {
   )
   await new Promise((resolve) => setTimeout(resolve, 100))
   await expect.element(doc.getByText("Foo")).toBeInTheDocument()
-  expect(onEnter).toHaveBeenCalledTimes(1)
+  expect(onEnter).toHaveBeenCalledTimes(0)
   expect(onExit).toHaveBeenCalledTimes(1)
   await expect.element(doc.getByText("Bar")).not.toBeInTheDocument()
   exit.resolve()
   await expect.element(doc.getByText("Bar")).toBeInTheDocument()
   await expect.element(doc.getByText("Foo")).not.toBeInTheDocument()
-  expect(onEnter).toHaveBeenCalledTimes(2)
+  expect(onEnter).toHaveBeenCalledTimes(1)
+})
+
+test("plays enter animation on mount with animateMount option", async () => {
+  const onEnter = vi.fn()
+  const options = { onEnter, animateMount: true }
+  const doc = render(
+    <FlipList {...options}>
+      <div key={1}>Foo</div>
+    </FlipList>,
+  )
+  await expect.element(doc.getByText("Foo")).toBeInTheDocument()
+  expect(onEnter).toHaveBeenCalledTimes(1)
 })

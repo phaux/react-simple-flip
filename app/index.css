@@ -23,8 +23,12 @@ body {
 
 .flex-y {
   display: flex;
-  flex-flow: column;
+  flex-direction: column;
   gap: 16px;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
 }
 
 .flex-1 {
