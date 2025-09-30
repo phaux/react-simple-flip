@@ -30,14 +30,9 @@ export interface FlipOptions {
    *
    * Default: {@link animateFrom}.
    *
-   * Pass `null` to disable move animations.
-   *
-   * The returned promise will be used to delay subsequent animations.
+   * Pass `null` to disable move animation.
    */
-  onMove?:
-    | ((elem: Element, transform: Keyframe, timing: EffectTiming) => Promise<void>)
-    | null
-    | undefined
+  animateMove?: ((params: AnimateParams) => Animation | null) | null | undefined
 
   /**
    * Function used to compute element's position and size.
@@ -60,7 +55,7 @@ export interface FlipOptions {
  */
 export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions): void {
   const {
-    onMove = animateFrom,
+    animateMove = animateFrom,
     timing = defaultSpring,
     getElementRect = getElementOffset,
   } = options
@@ -86,12 +81,13 @@ export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions
 
   useEffect(() => {
     // Try to animate on every rerender.
-    if (ref.current) {
-      const newRect = getElementRect(ref.current)
+    const element = ref.current
+    if (element) {
+      const newRect = getElementRect(element)
       if (rect.current) {
         const style = getDeltaTransform(newRect, rect.current)
         if (style) {
-          onMove?.(ref.current, style, timing)
+          animateMove?.({ element, index: 0, staggerDelay: 0, style, timing })
         }
       }
       rect.current = newRect
@@ -143,20 +139,48 @@ export function FlipWrapper(props: FlipWrapperProps): JSX.Element {
 }
 
 /**
+ * Parameters passed to animation callbacks.
+ */
+export interface AnimateParams {
+  /**
+   * The element to animate.
+   */
+  element: Element
+  /**
+   * Index in the list of currently animated elements.
+   */
+  index: number
+  /**
+   * Stagger delay specified in the options.
+   */
+  staggerDelay: number
+  /**
+   * Keyframe to animate from/to.
+   *
+   * For move animations this is the computed difference in position and size
+   * from current position to last position as a CSS transform.
+   *
+   * For enter/exit animations this is the hidden style specified in the options.
+   */
+  style: Keyframe
+  /**
+   * Timing specified in the options.
+   */
+  timing: EffectTiming
+}
+
+/**
  * Animates given element from a given keyframe.
  *
  * Doesn't do anything in prefers-reduced-motion mode.
- *
- * Resolves when the animation is finished.
  */
-export async function animateFrom(
-  elem: Element,
-  keyframe: Keyframe,
-  timing: EffectTiming,
-): Promise<void> {
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    await elem.animate([keyframe, {}], timing).finished
-  }
+export function animateFrom(params: AnimateParams): Animation | null {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null
+  return params.element.animate([params.style, {}], {
+    ...params.timing,
+    delay: params.index * params.staggerDelay,
+    fill: "backwards",
+  })
 }
 
 /**

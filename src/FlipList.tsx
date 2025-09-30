@@ -1,19 +1,25 @@
 import {
   cloneElement,
   createRef,
-  type JSX,
-  type Key,
-  type ReactElement,
-  type Ref,
-  type RefObject,
   useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type JSX,
+  type Key,
+  type ReactElement,
+  type Ref,
+  type RefObject,
 } from "react"
+import {
+  animateFrom,
+  getDeltaTransform,
+  getElementOffset,
+  type AnimateParams,
+  type FlipOptions,
+} from "./Flip.js"
 import { defaultSpring } from "./createSpring.js"
-import { animateFrom, getDeltaTransform, getElementOffset, type FlipOptions } from "./Flip.js"
 
 /**
  * Options for {@link useFlipList}.
@@ -21,11 +27,18 @@ import { animateFrom, getDeltaTransform, getElementOffset, type FlipOptions } fr
 export interface FlipListOptions extends FlipOptions {
   /**
    * Keyframe styles to animate from/to when entering/exiting an element.
-   * Passed directly to {@link onEnter} and {@link onExit}.
+   * Passed directly to {@link animateEnter} and {@link animateExit}.
    *
    * Default: {@link defaultHiddenStyle}.
    */
   hiddenStyle?: Keyframe | undefined
+
+  /**
+   * Delay between starting animations of individual items in milliseconds.
+   *
+   * Default: `1000 / 60`.
+   */
+  staggerDelay?: number | undefined
 
   /**
    * Callback function which animates the element when it enters.
@@ -33,16 +46,11 @@ export interface FlipListOptions extends FlipOptions {
    * This is called every time when a new child with a given key is rendered,
    * because it was added to the children array.
    *
-   * The returned promise is used to delay subsequent animations.
-   *
    * Default: {@link animateFrom}.
    *
-   * Pass `null` to disable enter animations.
+   * Pass `null` to disable enter animation.
    */
-  onEnter?:
-    | ((elem: Element, fromStyle: Keyframe, timing: EffectTiming) => Promise<void>)
-    | null
-    | undefined
+  animateEnter?: ((params: AnimateParams) => Animation | null) | null | undefined
 
   /**
    * Callback function which animates the element when it exits.
@@ -50,16 +58,11 @@ export interface FlipListOptions extends FlipOptions {
    * This is called every time when a child with a given key would not be rendered anymore,
    * because it was removed from the children array.
    *
-   * The returned promise is used to delay the removal of the element from the DOM until the animation finishes.
-   *
    * Default: {@link animateTo}.
    *
-   * Pass `null` to disable exit animations.
+   * Pass `null` to disable exit animation.
    */
-  onExit?:
-    | ((elem: Element, toStyle: Keyframe, timing: EffectTiming) => Promise<void>)
-    | null
-    | undefined
+  animateExit?: ((params: AnimateParams) => Animation | null) | null | undefined
 
   /**
    * If true, will animate items on the first render as if they were entering.
@@ -92,10 +95,11 @@ export function useFlipList<T>(
 ): readonly FlipListEntry<T>[] {
   const {
     timing = defaultSpring,
+    staggerDelay = 1000 / 60,
     hiddenStyle = defaultHiddenStyle,
-    onEnter = animateFrom,
-    onExit = animateTo,
-    onMove = animateFrom,
+    animateEnter = animateFrom,
+    animateExit = animateTo,
+    animateMove = animateFrom,
     getElementRect = getElementOffset,
     animateMount = false,
   } = options
@@ -118,28 +122,34 @@ export function useFlipList<T>(
 
       // Animate out items that are no longer in the new list.
       const promises = new Set<Promise<unknown> | null | undefined>()
-      for (const item of items) {
-        const key = getKey(item)
-        if (!newItems.some((newItem) => getKey(newItem) === key)) {
-          // This item needs to exit.
-          const ref = refs.current.get(key)
-          if (ref?.current) {
-            rects.current.delete(key)
-            promises.add(onExit?.(ref.current, hiddenStyle, timing))
+      try {
+        let index = 0
+        for (const item of items) {
+          const key = getKey(item)
+          if (!newItems.some((newItem) => getKey(newItem) === key)) {
+            // This item needs to exit.
+            const element = refs.current.get(key)?.current
+            if (element) {
+              rects.current.delete(key)
+              promises.add(
+                animateExit?.({ element, index, staggerDelay, style: hiddenStyle, timing })
+                  ?.finished,
+              )
+              index += 1
+            }
           }
         }
+      } finally {
+        // Wait for all exit animations to finish.
+        if (promises.size > 0) {
+          await Promise.all(promises).catch(() => {})
+        }
+        // Update rendered items.
+        setItems(newItems)
+        // Give a chance for effects to run again before processing next update.
+        // This will allow post-update effect to run next.
+        await new Promise((resolve) => setTimeout(resolve, 1))
       }
-      // Wait for all exit animations to finish.
-      if (promises.size > 0) {
-        await Promise.all(promises).catch(() => {})
-      }
-
-      // Update rendered items.
-      setItems(newItems)
-
-      // Give a chance for effects to run again before processing next update.
-      // This will allow post-update effect to run next.
-      await new Promise((resolve) => setTimeout(resolve, 1))
     })
 
     return () => {
@@ -149,35 +159,43 @@ export function useFlipList<T>(
 
   // Post-update animations (moves and enters)
   useLayoutEffect(() => {
-    // Animate all existing entries.
-    const promises = new Set<Promise<void> | null | undefined>()
-    for (const item of items) {
-      const key = getKey(item)
-      const ref = refs.current.get(key)
-      if (ref?.current) {
-        const newRect = getElementRect(ref.current)
-        const oldRect = rects.current.get(key)
-        if (oldRect) {
-          // Animate move
-          const style = getDeltaTransform(newRect, oldRect)
-          if (style) {
-            promises.add(onMove?.(ref.current, style, timing))
+    // Animate all existing items.
+    const promises = new Set<Promise<unknown> | null | undefined>()
+    try {
+      let index = 0
+      for (const item of items) {
+        const key = getKey(item)
+        const element = refs.current.get(key)?.current
+        if (element) {
+          const newRect = getElementRect(element)
+          // See if we have an old position.
+          const oldRect = rects.current.get(key)
+          if (oldRect) {
+            // Animate move
+            const style = getDeltaTransform(newRect, oldRect)
+            if (style) {
+              promises.add(animateMove?.({ element, index, staggerDelay, style, timing })?.finished)
+            }
+          } else if (!firstRender.current || animateMount) {
+            // Animate enter
+            promises.add(
+              animateEnter?.({ element, index, staggerDelay, style: hiddenStyle, timing })
+                ?.finished,
+            )
           }
-        } else if (!firstRender.current || animateMount) {
-          // Animate enter
-          promises.add(onEnter?.(ref.current, hiddenStyle, timing))
+          rects.current.set(key, newRect)
+          index += 1
         }
-        // Set last computed position.
-        rects.current.set(key, newRect)
       }
+    } finally {
+      // Add all animations to the promise chain.
+      if (promises.size > 0) {
+        postUpdateAnim.current = postUpdateAnim.current.then(() =>
+          Promise.all(promises).catch(() => {}),
+        )
+      }
+      firstRender.current = false
     }
-    // Add all animations to the promise chain.
-    if (promises.size > 0) {
-      postUpdateAnim.current = postUpdateAnim.current.then(() =>
-        Promise.all(promises).catch(() => {}),
-      )
-    }
-    firstRender.current = false
   }, [items])
 
   useEffect(() => {
@@ -211,6 +229,7 @@ export function useFlipList<T>(
       newRefs.set(key, ref)
       entries.push({ item, ref })
     }
+    // Update ref map to contain currently rendered refs.
     refs.current = newRefs
     return entries
   }, [items])
@@ -270,17 +289,10 @@ const getChildKey = (child: ReactElement) => child.key!
  * Animates given element to a given keyframe.
  *
  * Doesn't do anything in prefers-reduced-motion mode.
- *
- * Resolves when animation is finished.
  */
-export async function animateTo(
-  elem: HTMLElement,
-  keyframe: Keyframe,
-  timing: EffectTiming,
-): Promise<void> {
-  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    await elem.animate([{}, keyframe], { ...timing, fill: "forwards" }).finished
-  }
+export function animateTo(params: AnimateParams): Animation | null {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null
+  return params.element.animate([{}, params.style], { ...params.timing, fill: "forwards" })
 }
 
 /**
