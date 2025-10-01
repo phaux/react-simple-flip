@@ -16,6 +16,7 @@ import {
   animateFrom,
   getDeltaTransform,
   getElementOffset,
+  stagger,
   type AnimateParams,
   type FlipOptions,
 } from "./Flip.js"
@@ -44,7 +45,7 @@ export interface FlipListOptions extends FlipOptions {
   /**
    * Delay between starting animations of individual items in milliseconds.
    *
-   * Default: `1000 / 60`.
+   * Default: `0`.
    */
   staggerDelay?: number | undefined
 
@@ -103,7 +104,7 @@ export function useFlipList<T>(
 ): readonly FlipListEntry<T>[] {
   const {
     timing = defaultSpring,
-    staggerDelay = 1000 / 60,
+    staggerDelay = 0,
     enterStyle = defaultHiddenStyle,
     exitStyle = defaultHiddenStyle,
     animateEnter = animateFrom,
@@ -295,14 +296,20 @@ const getChildKey = (child: ReactElement) => child.key!
 /**
  * Animates given element to a given keyframe.
  *
+ * Adds delay based on element index and specified stagger delay using {@link stagger}.
+ 
  * Doesn't do anything in prefers-reduced-motion mode.
  */
 export function animateTo(params: AnimateParams): Animation | null {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null
-  return params.element.animate([{}, params.style], { ...params.timing, fill: "forwards" })
+  return params.element.animate([{}, params.style], {
+    ...params.timing,
+    delay: stagger(params.index, params.staggerDelay),
+    fill: "forwards",
+  })
 }
 
 /**
  * The default keyframe styles to animate from/to when entering/exiting an element.
  */
-export const defaultHiddenStyle: Keyframe = { opacity: 0, scale: 0.9 }
+export const defaultHiddenStyle: Keyframe = { opacity: 0, scale: 0.95 }

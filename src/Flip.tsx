@@ -172,16 +172,27 @@ export interface AnimateParams {
 /**
  * Animates given element from a given keyframe.
  *
+ * Adds delay based on element index and specified stagger delay using {@link stagger}.
+ *
  * Doesn't do anything in prefers-reduced-motion mode.
  */
 export function animateFrom(params: AnimateParams): Animation | null {
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null
   return params.element.animate([params.style, {}], {
     ...params.timing,
-    delay: params.index * params.staggerDelay,
+    delay: stagger(params.index, params.staggerDelay),
     fill: "backwards",
   })
 }
+
+/**
+ * Returns delay for staggered animation based on element index and stagger delay.
+ * The delay approaches 333ms but never exceeds it.
+ */
+export const stagger = (idx: number, delay: number): number =>
+  MAX_DELAY - MAX_DELAY ** 2 / (idx * delay + MAX_DELAY)
+
+const MAX_DELAY = 333
 
 /**
  * Returns element's {@link HTMLElement.offsetLeft}, {@link HTMLElement.offsetWidth}, etc. as a {@link DOMRect}.

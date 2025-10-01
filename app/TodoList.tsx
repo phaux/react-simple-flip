@@ -7,7 +7,7 @@ export function TodoList(props: { todos: Todo[]; showDone: boolean; animateMount
 
   return (
     <div className="grid relative">
-      <FlipList animateMount={animateMount}>
+      <FlipList animateMount={animateMount} staggerDelay={33}>
         {todos
           .filter((todo) => showDone || !todo.done)
           .map((todo) => (
