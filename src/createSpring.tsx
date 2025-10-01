@@ -56,10 +56,10 @@ export interface SpringOptions {
  */
 export function createSpring(options: SpringOptions = {}): EffectTiming {
   const { mass = 0.5, damping = 24, stiffness = 300, velocity = 0, resolution = 30 } = options
-  if (mass <= 0) throw new Error("Spring mass must be greater than 0")
-  if (stiffness <= 0) throw new Error("Spring stiffness must be greater than 0")
-  if (damping < 0) throw new Error("Spring damping must be greater than or equal to 0")
-  if (resolution <= 0) throw new Error("Spring resolution must be greater than 0")
+  if (mass <= 0) throw new RangeError("Spring mass must be greater than 0")
+  if (stiffness <= 0) throw new RangeError("Spring stiffness must be greater than 0")
+  if (damping <= 0) throw new RangeError("Spring damping must be greater than to 0")
+  if (resolution <= 0) throw new RangeError("Spring resolution must be greater than 0")
   const w0 = Math.sqrt(stiffness / mass)
   const zeta = damping / (2 * Math.sqrt(stiffness * mass))
   const wd = zeta < 1 ? w0 * Math.sqrt(1 - zeta ** 2) : 0
@@ -83,4 +83,7 @@ export function createSpring(options: SpringOptions = {}): EffectTiming {
  *
  * Result of calling {@link createSpring} with default options.
  */
-export const defaultSpring: EffectTiming = createSpring()
+export const defaultSpring: EffectTiming = {
+  easing: "linear(0, 0.2, 0.5, 0.7, 0.85, 0.92, 0.96, 0.98, 0.99, 1)",
+  duration: 333,
+}
