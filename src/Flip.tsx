@@ -1,6 +1,4 @@
 import {
-  type ComponentProps,
-  type ElementType,
   type JSX,
   type ReactElement,
   type Ref,
@@ -11,6 +9,29 @@ import {
   useRef,
 } from "react"
 import { defaultSpring } from "./createSpring.js"
+
+/**
+ * Props for {@link Flip}.
+ */
+export interface FlipProps extends FlipOptions {
+  children: ReactElement<{ ref?: Ref<HTMLElement> }>
+}
+
+/**
+ * Wrapper which animates its child whenever its position in the document changes between rerenders.
+ *
+ * Uses {@link useFlip} internally.
+ *
+ * Doesn't render anything by itself.
+ * The wrapped element must accept a ref prop.
+ */
+export function Flip(props: FlipProps): JSX.Element {
+  const { children, ...options } = props
+  const ref = useRef<HTMLElement>(null)
+  useImperativeHandle(children.props.ref, () => ref.current!)
+  useFlip(ref, options)
+  return cloneElement(children, { ref })
+}
 
 /**
  * Options for {@link useFlip}.
@@ -93,49 +114,6 @@ export function useFlip(ref: RefObject<HTMLElement | null>, options: FlipOptions
       rect.current = newRect
     }
   })
-}
-
-/**
- * Props for {@link Flip}.
- */
-export type FlipProps<T extends ElementType = "div"> = ComponentProps<T> & { options?: FlipOptions }
-
-/**
- * Element which animates whenever its position in the document changes between rerenders.
- *
- * Uses {@link useFlip} internally.
- *
- * Renders a `div` by default. Use `component` prop to override. The component must accept a ref prop.
- */
-export function Flip<T extends ElementType = "div">(props: FlipProps<T>): JSX.Element {
-  const { component: Component = "div", ref, options, ...rootProps } = props
-  const innerRef = useRef<HTMLDivElement>(null)
-  useImperativeHandle(ref, () => innerRef.current!)
-  useFlip(innerRef, options)
-  return <Component ref={innerRef} {...rootProps} />
-}
-
-/**
- * Props for {@link FlipWrapper}.
- */
-export interface FlipWrapperProps extends FlipOptions {
-  children: ReactElement<{ ref?: Ref<HTMLElement> }>
-}
-
-/**
- * Wrapper which animates its child whenever its position in the document changes between rerenders.
- *
- * Uses {@link useFlip} internally.
- *
- * Doesn't render anything by itself.
- * The wrapped element must accept a ref prop.
- */
-export function FlipWrapper(props: FlipWrapperProps): JSX.Element {
-  const { children, ...options } = props
-  const ref = useRef<HTMLElement>(null)
-  useImperativeHandle(children.props.ref, () => ref.current!)
-  useFlip(ref, options)
-  return cloneElement(children, { ref })
 }
 
 /**

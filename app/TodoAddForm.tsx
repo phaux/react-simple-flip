@@ -1,5 +1,5 @@
 import { useContext, useState, type FormEvent } from "react"
-import { FlipWrapper } from "../src/Flip.js"
+import { Flip } from "../src/Flip.js"
 import { TodoContext } from "./TodoApp.js"
 
 export function TodoAddForm() {
@@ -23,21 +23,21 @@ export function TodoAddForm() {
 
   return (
     <form className="flex-x relative" onSubmit={handleSubmit}>
-      <FlipWrapper>
+      <Flip>
         <button type="button" onClick={() => setIsBig((v) => !v)}>
           Resize
         </button>
-      </FlipWrapper>
-      <FlipWrapper>
+      </Flip>
+      <Flip>
         {isBig ? (
           <textarea name="title" rows={3} required className="flex-1" />
         ) : (
           <input type="text" name="title" required className="flex-1" />
         )}
-      </FlipWrapper>
-      <FlipWrapper>
+      </Flip>
+      <Flip>
         <button type="submit">Add</button>
-      </FlipWrapper>
+      </Flip>
     </form>
   )
 }

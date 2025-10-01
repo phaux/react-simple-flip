@@ -23,6 +23,40 @@ import {
 import { defaultSpring } from "./createSpring.js"
 
 /**
+ * Props for {@link FlipList}.
+ */
+export interface FlipListProps extends FlipListOptions {
+  children:
+    | ReactElement<{ ref: Ref<HTMLElement> }>[]
+    | ReactElement<{ ref: Ref<HTMLElement> }>
+    | null
+    | undefined
+}
+
+/**
+ * Animates a list of elements on enter and exit and whenever their position changes.
+ *
+ * Doesn't render anything by itself.
+ *
+ * Uses {@link useFlipList} internally.
+ *
+ * You must assign a unique key to each child.
+ *
+ * Each child must accept a ref prop. You can't assign your own ref to the children.
+ */
+export function FlipList(props: FlipListProps): JSX.Element[] {
+  const { children, ...options } = props
+  const childArray = useMemo(
+    () => (Array.isArray(children) ? children : children == null ? [] : [children]),
+    [children],
+  )
+  const entries = useFlipList(childArray, getChildKey, options)
+  return entries.map((entry) => cloneElement(entry.item, { ref: entry.ref }))
+}
+
+const getChildKey = (child: ReactElement) => child.key!
+
+/**
  * Options for {@link useFlipList}.
  */
 export interface FlipListOptions extends FlipOptions {
@@ -258,40 +292,6 @@ export interface FlipListEntry<T> {
    */
   readonly ref: RefObject<HTMLElement | null>
 }
-
-/**
- * Props for {@link FlipList}.
- */
-export interface FlipListProps extends FlipListOptions {
-  children:
-    | ReactElement<{ ref: Ref<HTMLElement> }>[]
-    | ReactElement<{ ref: Ref<HTMLElement> }>
-    | null
-    | undefined
-}
-
-/**
- * Animates a list of elements on enter and exit and whenever their position changes.
- *
- * Doesn't render anything by itself.
- *
- * Uses {@link useFlipList} internally.
- *
- * You must assign a unique key to each child.
- *
- * Each child must accept a ref prop. You can't assign your own ref to the children.
- */
-export function FlipList(props: FlipListProps): JSX.Element[] {
-  const { children, ...options } = props
-  const childArray = useMemo(
-    () => (Array.isArray(children) ? children : children == null ? [] : [children]),
-    [children],
-  )
-  const entries = useFlipList(childArray, getChildKey, options)
-  return entries.map((entry) => cloneElement(entry.item, { ref: entry.ref }))
-}
-
-const getChildKey = (child: ReactElement) => child.key!
 
 /**
  * Animates given element to a given keyframe.
