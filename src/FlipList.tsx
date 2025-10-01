@@ -141,8 +141,7 @@ export function useFlipList<T>(
             if (element) {
               rects.current.delete(key)
               promises.add(
-                animateExit?.({ element, index, staggerDelay, style: exitStyle, timing })
-                  ?.finished,
+                animateExit?.({ element, index, staggerDelay, style: exitStyle, timing })?.finished,
               )
               index += 1
             }
@@ -188,8 +187,7 @@ export function useFlipList<T>(
           } else if (!firstRender.current || animateMount) {
             // Animate enter
             promises.add(
-              animateEnter?.({ element, index, staggerDelay, style: enterStyle, timing })
-                ?.finished,
+              animateEnter?.({ element, index, staggerDelay, style: enterStyle, timing })?.finished,
             )
           }
           rects.current.set(key, newRect)
