@@ -1,6 +1,6 @@
 {
   "name": "react-simple-flip",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Tiny library for FLIP animations in React",
   "keywords": [
     "react",
