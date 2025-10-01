@@ -26,12 +26,20 @@ import { defaultSpring } from "./createSpring.js"
  */
 export interface FlipListOptions extends FlipOptions {
   /**
-   * Keyframe styles to animate from/to when entering/exiting an element.
-   * Passed directly to {@link animateEnter} and {@link animateExit}.
+   * Keyframe styles to animate from when entering an element.
+   * Passed directly to {@link animateEnter}.
    *
    * Default: {@link defaultHiddenStyle}.
    */
-  hiddenStyle?: Keyframe | undefined
+  enterStyle?: Keyframe | undefined
+
+  /**
+   * Keyframe styles to animate to when exiting an element.
+   * Passed directly to {@link animateExit}.
+   *
+   * Default: {@link defaultHiddenStyle}.
+   */
+  exitStyle?: Keyframe | undefined
 
   /**
    * Delay between starting animations of individual items in milliseconds.
@@ -96,7 +104,8 @@ export function useFlipList<T>(
   const {
     timing = defaultSpring,
     staggerDelay = 1000 / 60,
-    hiddenStyle = defaultHiddenStyle,
+    enterStyle = defaultHiddenStyle,
+    exitStyle = defaultHiddenStyle,
     animateEnter = animateFrom,
     animateExit = animateTo,
     animateMove = animateFrom,
@@ -132,7 +141,7 @@ export function useFlipList<T>(
             if (element) {
               rects.current.delete(key)
               promises.add(
-                animateExit?.({ element, index, staggerDelay, style: hiddenStyle, timing })
+                animateExit?.({ element, index, staggerDelay, style: exitStyle, timing })
                   ?.finished,
               )
               index += 1
@@ -179,7 +188,7 @@ export function useFlipList<T>(
           } else if (!firstRender.current || animateMount) {
             // Animate enter
             promises.add(
-              animateEnter?.({ element, index, staggerDelay, style: hiddenStyle, timing })
+              animateEnter?.({ element, index, staggerDelay, style: enterStyle, timing })
                 ?.finished,
             )
           }
