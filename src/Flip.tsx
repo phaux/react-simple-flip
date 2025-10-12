@@ -30,6 +30,7 @@ export function Flip(props: FlipProps): JSX.Element {
   const ref = useRef<HTMLElement>(null)
   useImperativeHandle(children.props.ref, () => ref.current!)
   useFlip(ref, options)
+  // eslint-disable-next-line react-hooks/refs
   return cloneElement(children, { ref })
 }
 

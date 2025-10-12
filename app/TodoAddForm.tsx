@@ -12,7 +12,7 @@ export function TodoAddForm() {
     dispatch({
       type: "ADD",
       data: {
-        title: fd.get("title")?.toString() ?? "",
+        title: fd.get("title") as string,
         color: `lch(50 50 ${Math.random() * 360}deg / 50%)`,
         done: false,
         size: 1,

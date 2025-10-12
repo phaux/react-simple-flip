@@ -33,8 +33,9 @@ test("FlipList works", async () => {
   )
   await expect.element(doc.getByText("Bar2")).toBeInTheDocument()
   expect(animateMove).toHaveBeenCalledTimes(2)
-  expect(animateMove.mock.calls[0]?.[0].style).toEqual({ translate: "0px 10px" })
-  expect(animateMove.mock.calls[1]?.[0].style).toEqual({ translate: "0px -10px" })
+  type AnimateMoveCall = [{ style: { translate: string } }];
+  expect((animateMove.mock.calls[0] as AnimateMoveCall)[0].style).toEqual({ translate: "0px 10px" })
+  expect((animateMove.mock.calls[1] as AnimateMoveCall)[0].style).toEqual({ translate: "0px -10px" })
   doc.rerender(
     <FlipList {...options}>
       <div key={2} style={{ height: 10 }}>

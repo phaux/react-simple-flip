@@ -19,7 +19,8 @@ test("Flip calls animateMove", async () => {
   )
   await expect.element(doc.getByText("Test2")).toBeInTheDocument()
   expect(animateMove).toHaveBeenCalledTimes(1)
-  expect(animateMove.mock.calls[0]?.[0].style).toEqual({ translate: "0px -10px" })
+  type AnimateMoveCall = [{ style: { translate: string } }];
+  expect((animateMove.mock.calls[0] as AnimateMoveCall)[0].style).toEqual({ translate: "0px -10px" })
   doc.rerender(
     <Flip animateMove={animateMove}>
       <div style={{ marginTop: 20 }}>Test3</div>

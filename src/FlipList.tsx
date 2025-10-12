@@ -184,8 +184,14 @@ export function useFlipList<T>(
         }
       } finally {
         // Wait for all exit animations to finish.
-        if (promises.size > 0) {
-          await Promise.all(promises).catch(() => {})
+        const promisesToAwait: Promise<unknown>[] = [];
+        for (const promise of promises) {
+          if (promise) {
+            promisesToAwait.push(promise);
+          }
+        }
+        if (promisesToAwait.length > 0) {
+          await Promise.all(promisesToAwait).catch(() => {})
         }
         // Update rendered items.
         setItems(newItems)
@@ -198,7 +204,7 @@ export function useFlipList<T>(
     return () => {
       cancelled = true
     }
-  }, [items, newItems])
+  }, [items, newItems, animateExit, exitStyle, getKey, staggerDelay, timing])
 
   // Post-update animations (moves and enters)
   useLayoutEffect(() => {
@@ -231,14 +237,20 @@ export function useFlipList<T>(
       }
     } finally {
       // Add all animations to the promise chain.
-      if (promises.size > 0) {
+      const promisesToAwait: Promise<unknown>[] = [];
+        for (const promise of promises) {
+          if (promise) {
+            promisesToAwait.push(promise);
+          }
+        }
+      if (promisesToAwait.length > 0) {
         postUpdateAnim.current = postUpdateAnim.current.then(() =>
-          Promise.all(promises).catch(() => {}),
+          Promise.all(promisesToAwait).catch(() => {}),
         )
       }
       firstRender.current = false
     }
-  }, [items])
+  }, [items, animateEnter, animateMount, animateMove, enterStyle, getElementRect, getKey, staggerDelay, timing])
 
   useEffect(() => {
     const parent = refs.current.values().next().value?.current?.offsetParent
@@ -274,7 +286,7 @@ export function useFlipList<T>(
     // Update ref map to contain currently rendered refs.
     refs.current = newRefs
     return entries
-  }, [items])
+  }, [items, getKey])
 }
 
 /**
