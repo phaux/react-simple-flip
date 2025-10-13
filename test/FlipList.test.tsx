@@ -4,9 +4,9 @@ import { render } from "vitest-browser-react"
 import { FlipList, type FlipListOptions } from "../src/FlipList.js"
 
 test("FlipList works", async () => {
-  const animateMove = vi.fn()
-  const animateEnter = vi.fn()
-  const animateExit = vi.fn()
+  const animateMove = vi.fn<NonNullable<FlipListOptions["animateMove"]>>(() => null)
+  const animateEnter = vi.fn<NonNullable<FlipListOptions["animateEnter"]>>(() => null)
+  const animateExit = vi.fn<NonNullable<FlipListOptions["animateExit"]>>(() => null)
   const options: FlipListOptions = { animateMove, animateEnter, animateExit }
   const doc = render(
     <FlipList {...options}>

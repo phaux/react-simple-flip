@@ -79,7 +79,7 @@ const defaultTodos: Todo[] = [
   },
 ]
 
-export const TodoContext = createContext<ActionDispatch<[TodoAction]>>(null as any)
+export const TodoContext = createContext<ActionDispatch<[TodoAction]>>(() => {})
 
 export default function TodoApp() {
   const [todos, dispatch] = useReducer(todoReducer, defaultTodos)

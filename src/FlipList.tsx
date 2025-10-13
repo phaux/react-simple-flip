@@ -165,7 +165,7 @@ export function useFlipList<T>(
       if (cancelled) return
 
       // Animate out items that are no longer in the new list.
-      const promises = new Set<Promise<unknown> | null | undefined>()
+      const promises = new Set<Promise<unknown>>()
       try {
         let index = 0
         for (const item of items) {
@@ -176,7 +176,10 @@ export function useFlipList<T>(
             if (element) {
               rects.current.delete(key)
               promises.add(
-                animateExit?.({ element, index, staggerDelay, style: exitStyle, timing })?.finished,
+                Promise.resolve(
+                  animateExit?.({ element, index, staggerDelay, style: exitStyle, timing })
+                    ?.finished,
+                ),
               )
               index += 1
             }
@@ -198,12 +201,12 @@ export function useFlipList<T>(
     return () => {
       cancelled = true
     }
-  }, [items, newItems])
+  }, [animateExit, exitStyle, getKey, items, newItems, staggerDelay, timing])
 
   // Post-update animations (moves and enters)
   useLayoutEffect(() => {
     // Animate all existing items.
-    const promises = new Set<Promise<unknown> | null | undefined>()
+    const promises = new Set<Promise<unknown>>()
     try {
       let index = 0
       for (const item of items) {
@@ -217,12 +220,19 @@ export function useFlipList<T>(
             // Animate move
             const style = getDeltaTransform(newRect, oldRect)
             if (style) {
-              promises.add(animateMove?.({ element, index, staggerDelay, style, timing })?.finished)
+              promises.add(
+                Promise.resolve(
+                  animateMove?.({ element, index, staggerDelay, style, timing })?.finished,
+                ),
+              )
             }
           } else if (!firstRender.current || animateMount) {
             // Animate enter
             promises.add(
-              animateEnter?.({ element, index, staggerDelay, style: enterStyle, timing })?.finished,
+              Promise.resolve(
+                animateEnter?.({ element, index, staggerDelay, style: enterStyle, timing })
+                  ?.finished,
+              ),
             )
           }
           rects.current.set(key, newRect)
@@ -238,7 +248,17 @@ export function useFlipList<T>(
       }
       firstRender.current = false
     }
-  }, [items])
+  }, [
+    animateEnter,
+    animateMount,
+    animateMove,
+    enterStyle,
+    getElementRect,
+    getKey,
+    items,
+    staggerDelay,
+    timing,
+  ])
 
   useEffect(() => {
     const parent = refs.current.values().next().value?.current?.offsetParent
@@ -274,7 +294,7 @@ export function useFlipList<T>(
     // Update ref map to contain currently rendered refs.
     refs.current = newRefs
     return entries
-  }, [items])
+  }, [getKey, items])
 }
 
 /**
