@@ -25,7 +25,7 @@
     "format": "prettier --write .",
     "prepare": "vite build",
     "start": "vite",
-    "test": "tsc --noEmit && eslint . && vitest"
+    "test": "tsc --noEmit && vitest && eslint ."
   },
   "prettier": {
     "printWidth": 100,
@@ -34,8 +34,6 @@
   "devDependencies": {
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.46.0",
-    "@typescript-eslint/parser": "^8.46.0",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/browser": "^3.0.4",
     "@vitest/coverage-v8": "^3.0.4",

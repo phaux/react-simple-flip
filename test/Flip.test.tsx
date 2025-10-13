@@ -1,10 +1,10 @@
 /// <reference types="@vitest/browser/providers/playwright" />
 import { expect, test, vi } from "vitest"
 import { render } from "vitest-browser-react"
-import { Flip } from "../src/Flip.js"
+import { Flip, type FlipOptions } from "../src/Flip.js"
 
 test("Flip calls animateMove", async () => {
-  const animateMove = vi.fn()
+  const animateMove = vi.fn<NonNullable<FlipOptions["animateMove"]>>(() => null)
   const doc = render(
     <Flip animateMove={animateMove}>
       <div style={{ marginTop: 10 }}>Test</div>
@@ -19,8 +19,7 @@ test("Flip calls animateMove", async () => {
   )
   await expect.element(doc.getByText("Test2")).toBeInTheDocument()
   expect(animateMove).toHaveBeenCalledTimes(1)
-  type AnimateMoveCall = [{ style: { translate: string } }];
-  expect((animateMove.mock.calls[0] as AnimateMoveCall)[0].style).toEqual({ translate: "0px -10px" })
+  expect(animateMove.mock.calls[0]?.[0].style).toEqual({ translate: "0px -10px" })
   doc.rerender(
     <Flip animateMove={animateMove}>
       <div style={{ marginTop: 20 }}>Test3</div>

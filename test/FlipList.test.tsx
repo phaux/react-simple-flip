@@ -4,9 +4,9 @@ import { render } from "vitest-browser-react"
 import { FlipList, type FlipListOptions } from "../src/FlipList.js"
 
 test("FlipList works", async () => {
-  const animateMove = vi.fn()
-  const animateEnter = vi.fn()
-  const animateExit = vi.fn()
+  const animateMove = vi.fn<NonNullable<FlipListOptions["animateMove"]>>(() => null)
+  const animateEnter = vi.fn<NonNullable<FlipListOptions["animateEnter"]>>(() => null)
+  const animateExit = vi.fn<NonNullable<FlipListOptions["animateExit"]>>(() => null)
   const options: FlipListOptions = { animateMove, animateEnter, animateExit }
   const doc = render(
     <FlipList {...options}>
@@ -33,9 +33,8 @@ test("FlipList works", async () => {
   )
   await expect.element(doc.getByText("Bar2")).toBeInTheDocument()
   expect(animateMove).toHaveBeenCalledTimes(2)
-  type AnimateMoveCall = [{ style: { translate: string } }];
-  expect((animateMove.mock.calls[0] as AnimateMoveCall)[0].style).toEqual({ translate: "0px 10px" })
-  expect((animateMove.mock.calls[1] as AnimateMoveCall)[0].style).toEqual({ translate: "0px -10px" })
+  expect(animateMove.mock.calls[0]?.[0].style).toEqual({ translate: "0px 10px" })
+  expect(animateMove.mock.calls[1]?.[0].style).toEqual({ translate: "0px -10px" })
   doc.rerender(
     <FlipList {...options}>
       <div key={2} style={{ height: 10 }}>
