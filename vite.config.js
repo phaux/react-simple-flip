@@ -1,7 +1,7 @@
-/// <reference types="@vitest/browser/providers/playwright" />
 import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { playwright } from "@vitest/browser-playwright"
 import dts from "vite-plugin-dts"
+import { defineConfig } from "vitest/config"
 
 export default defineConfig({
   plugins: [react(), dts({ rollupTypes: true })],
@@ -19,7 +19,7 @@ export default defineConfig({
   test: {
     browser: {
       enabled: true,
-      provider: "playwright",
+      provider: playwright(),
       instances: [{ browser: "chromium" }],
       headless: true,
     },
