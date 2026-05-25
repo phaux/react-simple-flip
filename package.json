@@ -22,10 +22,11 @@
     "dist"
   ],
   "scripts": {
+    "check": "tsc --noEmit && eslint .",
     "format": "prettier --write .",
     "prepare": "vite build",
     "start": "vite",
-    "test": "tsc --noEmit && vitest && eslint ."
+    "test": "vitest"
   },
   "prettier": {
     "printWidth": 100,
