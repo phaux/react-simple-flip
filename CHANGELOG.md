@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/phaux/react-simple-flip/compare/v1.0.0...v1.1.0) (2026-05-25)
+
+
+### Features
+
+* use effect instead of layout effect ([#71](https://github.com/phaux/react-simple-flip/issues/71)) ([a47298a](https://github.com/phaux/react-simple-flip/commit/a47298a9fe312b17898e42b6f6ff28bce9af5cbe))
+
 ## 1.0.0 (2025-10-01)
 
 
