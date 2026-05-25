@@ -2,7 +2,6 @@ import {
   cloneElement,
   createRef,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -204,7 +203,7 @@ export function useFlipList<T>(
   }, [animateExit, exitStyle, getKey, items, newItems, staggerDelay, timing])
 
   // Post-update animations (moves and enters)
-  useLayoutEffect(() => {
+  useEffect(() => {
     // Animate all existing items.
     const promises = new Set<Promise<unknown>>()
     try {
