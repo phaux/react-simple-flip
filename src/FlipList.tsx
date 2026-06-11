@@ -285,12 +285,14 @@ export function useFlipList<T>(
     const newRefs = new Map<Key, RefObject<HTMLElement | null>>()
     for (const item of items) {
       const key = getKey(item)
+      // eslint-disable-next-line react-hooks/refs
       let ref = refs.current.get(key)
       if (!ref) ref = createRef()
       newRefs.set(key, ref)
       entries.push({ item, ref })
     }
     // Update ref map to contain currently rendered refs.
+    // eslint-disable-next-line react-hooks/refs
     refs.current = newRefs
     return entries
   }, [getKey, items])
