@@ -23,10 +23,10 @@
     "src"
   ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "lint": "eslint .",
-    "prepare": "tsc -p tsconfig.build.json",
     "start": "vite",
     "test": "vitest"
   },
