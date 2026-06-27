@@ -1,11 +1,11 @@
 import react from "@vitejs/plugin-react"
 import { playwright } from "@vitest/browser-playwright"
-import dts from "vite-plugin-dts"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
-  plugins: [react(), dts({ rollupTypes: true })],
+  plugins: [react()],
   build: {
+    // Not used right now.
     lib: {
       entry: import.meta.dirname + "/src/index.tsx",
       formats: ["es"],
@@ -14,7 +14,6 @@ export default defineConfig({
     rollupOptions: {
       external: ["react", "react/jsx-runtime"],
     },
-    minify: false,
   },
   test: {
     browser: {

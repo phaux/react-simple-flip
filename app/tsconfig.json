@@ -1,8 +1,12 @@
 {
   "extends": "../tsconfig.json",
+  "references": [{ "path": "../src" }],
   "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
     "isolatedDeclarations": false,
-    "noEmit": true
+    "rootDir": ".",
+    "types": ["vite/client"]
   },
   "include": ["."]
 }

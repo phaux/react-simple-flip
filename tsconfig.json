@@ -1,6 +1,8 @@
 {
+  "references": [{ "path": "app" }, { "path": "test" }],
   "compilerOptions": {
     "declaration": true,
+    "declarationMap": true,
     "exactOptionalPropertyTypes": true,
     "isolatedDeclarations": true,
     "isolatedModules": true,
@@ -9,13 +11,12 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noUncheckedIndexedAccess": true,
-    "noUncheckedSideEffectImports": true,
-    "outDir": "dist",
-    "rootDir": "src",
+    "sourceMap": true,
+    "skipLibCheck": true,
     "strict": true,
     "target": "ESNext",
     "types": [],
     "verbatimModuleSyntax": true
   },
-  "include": ["src"]
+  "files": []
 }
